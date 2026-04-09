@@ -186,6 +186,16 @@ const server = http.createServer(async (req, res) => {
         return json(500, { erro: e.message });
       }
     }
+    
+    // ── GET /listar-situacoes ─────────────────────────────────────────────
+    if (method === 'GET' && pathname === '/listar-situacoes') {
+      try {
+        const data = await blingApi.blingGet('/situacoes');
+        return json(200, data);
+      } catch (e) {
+        return json(500, { erro: e.message });
+      }
+    }
     // 404
     return json(404, { erro: `Rota não encontrada: ${method} ${pathname}` });
 
