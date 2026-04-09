@@ -127,5 +127,6 @@ async function alterarSituacaoPedido(pedidoId, situacaoId) {
 module.exports = {
   buscarPedidosPorSituacao,
   buscarDetalhePedido,
-  alterarSituacaoPedido
+  alterarSituacaoPedido,
+  blingGet
 };
