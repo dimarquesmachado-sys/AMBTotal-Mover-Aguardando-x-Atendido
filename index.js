@@ -176,7 +176,16 @@ const server = http.createServer(async (req, res) => {
       rodarF2('manual-manha');
       return json(202, { mensagem: 'F2 iniciado. Acompanhe os logs.' });
     }
-
+// ── GET /buscar-pedido/:id ─────────────────────────────────────────────
+    if (method === 'GET' && pathname.startsWith('/buscar-pedido/')) {
+      const idPedido = pathname.split('/').pop();
+      try {
+        const detalhe = await blingApi.buscarDetalhePedido(idPedido);
+        return json(200, detalhe);
+      } catch (e) {
+        return json(500, { erro: e.message });
+      }
+    }
     // 404
     return json(404, { erro: `Rota não encontrada: ${method} ${pathname}` });
 
