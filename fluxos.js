@@ -3,7 +3,7 @@ const mlApi = require('./mlApi');
 const mlTokenManager = require('./mlTokenManager');
 
 const SITUACAO_ATENDIDO = 9;
-const SITUACAO_AGUARDANDO = parseInt(process.env.SITUACAO_AGUARDANDO || '7259');
+const SITUACAO_AGUARDANDO = parseInt(process.env.SITUACAO_AGUARDANDO || '745122');
 
 const ME_LOJA_IDS = (process.env.ME_LOJA_IDS || '')
   .split(',')
@@ -13,7 +13,7 @@ const ME_LOJA_IDS = (process.env.ME_LOJA_IDS || '')
 
 const MAX_PEDIDOS_F1 = parseInt(process.env.MAX_PEDIDOS_F1 || '500');
 const MAX_PEDIDOS_F2 = parseInt(process.env.MAX_PEDIDOS_F2 || '500');
-const JANELA_DIAS = parseInt(process.env.JANELA_ULTIMOS_DIAS || '15');
+const JANELA_DIAS = parseInt(process.env.JANELA_ULTIMOS_DIAS || '20');
 
 const memoriaMovidos = new Set();
 
