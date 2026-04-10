@@ -53,7 +53,7 @@ async function executarF1() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
+  try { mlToken = await mlTokenManager.garantirTokenML(); } catch (e) {
     console.warn('[F1] Sem token ML:', e.message);
   }
 
@@ -83,10 +83,6 @@ async function executarF1() {
     }
 
     if (!detalhe) { erros++; continue; }
-    // Só mover se realmente está em AGUARDANDO
-    if (detalhe?.situacao?.id !== SITUACAO_AGUARDANDO) {
-      ignorados++; continue;
-    }
 
     if (ehFlex(detalhe)) {
       console.log(`[F1] Pedido ${blingId} é FLEX — ignorando.`);
@@ -107,12 +103,12 @@ async function executarF1() {
     if (!mlToken) {
       console.warn(`[F1] Sem token ML — pulando pedido ${blingId}.`);
       ignorados++; continue;
-    } else {
-      const substatus = await mlApi.consultarSubstatusShipment(mlToken, numeroLoja);
-      if (substatus !== 'buffered') {
-        console.log(`[F1] Pedido ${blingId} substatus="${substatus}" — tem etiqueta, ignorando.`);
-        ignorados++; continue;
-      }
+    }
+
+    const substatus = await mlApi.consultarSubstatusShipment(mlToken, numeroLoja);
+    if (substatus !== 'buffered') {
+      console.log(`[F1] Pedido ${blingId} substatus="${substatus}" — tem etiqueta, ignorando.`);
+      ignorados++; continue;
     }
 
     try {
@@ -136,7 +132,7 @@ async function executarF2() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
+  try { mlToken = await mlTokenManager.garantirTokenML(); } catch (e) {
     console.warn('[F2] Sem token ML:', e.message);
   }
 
@@ -164,6 +160,11 @@ async function executarF2() {
     }
 
     if (!detalhe) { erros++; continue; }
+
+    // Garante que só mexe em pedidos realmente em AGUARDANDO
+    if (Number(detalhe?.situacao?.id) !== SITUACAO_AGUARDANDO) {
+      ignorados++; continue;
+    }
 
     if (ehFlex(detalhe)) {
       try {
