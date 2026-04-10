@@ -117,10 +117,11 @@ async function executarF1() {
       movidos++;
       console.log(`[F1] ✅ Pedido ${blingId} movido para AGUARDANDO.`);
     } catch (e) {
-      memoriaMovidos.add(blingId); // evita loop mesmo em erro
+      memoriaMovidos.add(blingId);
       console.error(`[F1] Erro ao mover pedido ${blingId}:`, e.message);
       erros++;
     }
+  }
 
   const duracao = ((Date.now() - inicio) / 1000).toFixed(1);
   console.log(`[F1] Concluído em ${duracao}s — Movidos: ${movidos} | Ignorados: ${ignorados} | Erros: ${erros}`);
@@ -161,7 +162,6 @@ async function executarF2() {
 
     if (!detalhe) { erros++; continue; }
 
-    // Garante que só mexe em pedidos realmente em AGUARDANDO
     if (Number(detalhe?.situacao?.id) !== SITUACAO_AGUARDANDO) {
       ignorados++; continue;
     }
