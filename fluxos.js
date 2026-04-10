@@ -105,7 +105,8 @@ async function executarF1() {
     }
 
     if (!mlToken) {
-      console.warn(`[F1] Sem token ML, movendo ${blingId} para AGUARDANDO por precaução.`);
+      console.warn(`[F1] Sem token ML — pulando pedido ${blingId}.`);
+      ignorados++; continue;
     } else {
       const substatus = await mlApi.consultarSubstatusShipment(mlToken, numeroLoja);
       if (substatus !== 'buffered') {
