@@ -83,6 +83,10 @@ async function executarF1() {
     }
 
     if (!detalhe) { erros++; continue; }
+    // Só mover se realmente está em AGUARDANDO
+    if (detalhe?.situacao?.id !== SITUACAO_AGUARDANDO) {
+      ignorados++; continue;
+    }
 
     if (ehFlex(detalhe)) {
       console.log(`[F1] Pedido ${blingId} é FLEX — ignorando.`);
