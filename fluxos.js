@@ -53,7 +53,7 @@ async function executarF1() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.garantirTokenML(); } catch (e) {
+  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
     console.warn('[F1] Sem token ML:', e.message);
   }
 
@@ -132,7 +132,7 @@ async function executarF2() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.garantirTokenML(); } catch (e) {
+  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
     console.warn('[F2] Sem token ML:', e.message);
   }
 
