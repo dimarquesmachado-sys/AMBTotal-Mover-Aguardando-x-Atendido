@@ -30,7 +30,6 @@ async function refreshAccessToken() {
   if (!tokens || !tokens.refresh_token) {
     throw new Error('Nenhum refresh_token ML disponível. Execute /setup-ml primeiro.');
   }
-
   const res = await fetch('https://api.mercadolibre.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -41,12 +40,10 @@ async function refreshAccessToken() {
       refresh_token: tokens.refresh_token
     })
   });
-
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Falha ao renovar token ML: ${res.status} ${txt}`);
   }
-
   const newTokens = await res.json();
   newTokens.obtained_at = Date.now();
   saveTokens(newTokens);
@@ -59,20 +56,12 @@ async function getAccessToken() {
   if (!tokens || !tokens.access_token) {
     throw new Error('Tokens ML não encontrados. Execute /setup-ml.');
   }
-
-  // Testa se o token ainda é válido
   const res = await fetch('https://api.mercadolibre.com/users/me', {
     headers: { 'Authorization': `Bearer ${tokens.access_token}` }
   });
-
   if (res.ok) return tokens.access_token;
-
-  // Token inválido/expirado — renova
   console.log('[mlTokenManager] Token ML expirado, renovando...');
   return await refreshAccessToken();
-}
-
-  return tokens.access_token;
 }
 
 async function exchangeCodeForToken(authCode) {
@@ -87,12 +76,10 @@ async function exchangeCodeForToken(authCode) {
       redirect_uri: process.env.BLING_REDIRECT_URI.replace('/callback', '/callback-ml')
     })
   });
-
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Falha ao trocar código ML: ${res.status} ${txt}`);
   }
-
   const tokens = await res.json();
   tokens.obtained_at = Date.now();
   saveTokens(tokens);
