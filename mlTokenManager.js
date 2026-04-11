@@ -56,16 +56,21 @@ async function refreshAccessToken() {
 
 async function getAccessToken() {
   const tokens = loadTokens();
-  if (!tokens) throw new Error('Tokens ML não encontrados. Execute /setup-ml.');
-
-  const expiresIn = tokens.expires_in || 21600;
-  const obtainedAt = tokens.obtained_at || 0;
-  const age = (Date.now() - obtainedAt) / 1000;
-
-  if (age >= expiresIn - 60) {
-    console.log('[mlTokenManager] Token ML expirado/prestes a expirar, renovando...');
-    return await refreshAccessToken();
+  if (!tokens || !tokens.access_token) {
+    throw new Error('Tokens ML não encontrados. Execute /setup-ml.');
   }
+
+  // Testa se o token ainda é válido
+  const res = await fetch('https://api.mercadolibre.com/users/me', {
+    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+  });
+
+  if (res.ok) return tokens.access_token;
+
+  // Token inválido/expirado — renova
+  console.log('[mlTokenManager] Token ML expirado, renovando...');
+  return await refreshAccessToken();
+}
 
   return tokens.access_token;
 }
