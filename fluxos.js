@@ -105,9 +105,9 @@ async function executarF1() {
       ignorados++; continue;
     }
 
-    const substatus = await mlApi.consultarSubstatusShipment(mlToken, numeroLoja);
     if (substatus !== 'buffered') {
       console.log(`[F1] Pedido ${blingId} substatus="${substatus}" — tem etiqueta, ignorando.`);
+      memoriaMovidos.add(blingId);
       ignorados++; continue;
     }
 
