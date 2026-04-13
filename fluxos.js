@@ -1,6 +1,6 @@
 const blingApi = require('./blingApi');
 const mlApi = require('./mlApi');
-const mlTokenManager = require('./mlTokenManager');
+const { garantirTokenML } = require('./mlTokenManager');
 
 const SITUACAO_ATENDIDO = 9;
 const SITUACAO_AGUARDANDO = parseInt(process.env.SITUACAO_AGUARDANDO || '745122');
@@ -60,7 +60,7 @@ async function executarF1() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
+  try { mlToken = await garantirTokenML(); } catch (e) {
     console.warn('[F1] Sem token ML:', e.message);
   }
 
@@ -144,7 +144,7 @@ async function executarF2() {
   let movidos = 0, ignorados = 0, erros = 0;
 
   let mlToken = null;
-  try { mlToken = await mlTokenManager.getAccessToken(); } catch (e) {
+  try { mlToken = await garantirTokenML(); } catch (e) {
     console.warn('[F2] Sem token ML:', e.message);
   }
 
