@@ -13,7 +13,7 @@ const ME_LOJA_IDS = (process.env.ME_LOJA_IDS || '')
 
 const MAX_PEDIDOS_F1 = parseInt(process.env.MAX_PEDIDOS_F1 || '500');
 const MAX_PEDIDOS_F2 = parseInt(process.env.MAX_PEDIDOS_F2 || '500');
-const JANELA_DIAS = parseInt(process.env.JANELA_ULTIMOS_DIAS || '20');
+const JANELA_DIAS = parseInt(process.env.JANELA_ULTIMOS_DIAS || '15');
 
 const memoriaMovidos = new Set();
 
@@ -93,17 +93,20 @@ async function executarF1() {
 
     if (ehFlex(detalhe)) {
       console.log(`[F1] Pedido ${blingId} é FLEX — ignorando.`);
+      memoriaMovidos.add(blingId);
       ignorados++; continue;
     }
 
     if (temRastreioNoBling(detalhe)) {
       console.log(`[F1] Pedido ${blingId} tem rastreio no Bling — ignorando.`);
+      memoriaMovidos.add(blingId);
       ignorados++; continue;
     }
 
     const numeroLoja = extrairNumeroLoja(detalhe);
     if (!numeroLoja) {
       console.warn(`[F1] Pedido ${blingId} sem numeroLoja — ignorando.`);
+      memoriaMovidos.add(blingId);
       ignorados++; continue;
     }
 
@@ -112,6 +115,7 @@ async function executarF1() {
       ignorados++; continue;
     }
 
+    const substatus = await mlApi.consultarSubstatusShipment(mlToken, numeroLoja);
     if (substatus !== 'buffered') {
       console.log(`[F1] Pedido ${blingId} substatus="${substatus}" — tem etiqueta, ignorando.`);
       memoriaMovidos.add(blingId);
