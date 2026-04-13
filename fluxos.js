@@ -38,8 +38,15 @@ function ehFlex(detalhe) {
 
 function temRastreioNoBling(detalhe) {
   try {
-    const rastreio = detalhe?.transporte?.codigoRastreamento || '';
-    return rastreio.trim().length > 0;
+    const v = detalhe?.transporte?.volumes?.[0];
+    const codigo =
+      v?.codigoRastreamento ||
+      v?.codigoRastreio ||
+      v?.tracking ||
+      v?.codigo ||
+      detalhe?.transporte?.codigoRastreamento ||
+      '';
+    return String(codigo).trim().length > 0;
   } catch { return false; }
 }
 
