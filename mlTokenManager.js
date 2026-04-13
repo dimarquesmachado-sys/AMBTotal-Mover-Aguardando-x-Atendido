@@ -1,90 +1,83 @@
+'use strict';
+
 const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
+const fs    = require('fs');
 
-const ML_TOKEN_FILE = process.env.ML_TOKEN_FILE || '/data/ml_tokens.json';
+const ML_TOKEN_FILE    = process.env.ML_TOKEN_FILE    || '/data/ml_tokens.json';
+const ML_CLIENT_ID     = process.env.ML_CLIENT_ID;
+const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET;
+const ML_REDIRECT_URI  = 'https://good-mover-aguardando-x-atendido.onrender.com/callback-ml';
 
-function loadTokens() {
+function lerTokens() {
   try {
-    if (fs.existsSync(ML_TOKEN_FILE)) {
-      return JSON.parse(fs.readFileSync(ML_TOKEN_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.error('[mlTokenManager] Erro ao carregar tokens ML:', e.message);
-  }
-  return null;
-}
-
-function saveTokens(tokens) {
-  try {
-    const dir = path.dirname(ML_TOKEN_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(ML_TOKEN_FILE, JSON.stringify(tokens, null, 2));
-  } catch (e) {
-    console.error('[mlTokenManager] Erro ao salvar tokens ML:', e.message);
+    return JSON.parse(fs.readFileSync(ML_TOKEN_FILE, 'utf8'));
+  } catch {
+    return null;
   }
 }
 
-async function refreshAccessToken() {
-  const tokens = loadTokens();
-  if (!tokens || !tokens.refresh_token) {
-    throw new Error('Nenhum refresh_token ML disponível. Execute /setup-ml primeiro.');
-  }
-  const res = await fetch('https://api.mercadolibre.com/oauth/token', {
+function salvarTokens(tokens) {
+  fs.writeFileSync(ML_TOKEN_FILE, JSON.stringify(tokens, null, 2));
+}
+
+async function trocarCodigoPorToken(code) {
+  const resp = await fetch('https://api.mercadolibre.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: process.env.ML_CLIENT_ID,
-      client_secret: process.env.ML_CLIENT_SECRET,
+      grant_type:    'authorization_code',
+      client_id:     ML_CLIENT_ID,
+      client_secret: ML_CLIENT_SECRET,
+      code,
+      redirect_uri:  ML_REDIRECT_URI
+    })
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`ML OAuth erro ${resp.status}: ${txt}`);
+  }
+  const data = await resp.json();
+  salvarTokens(data);
+  console.log('[mlToken] Token inicial obtido e salvo ✓');
+  return data.access_token;
+}
+
+async function renovarTokenML() {
+  const tokens = lerTokens();
+  if (!tokens?.refresh_token) throw new Error('ML: sem refresh_token salvo');
+  const resp = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'refresh_token',
+      client_id:     ML_CLIENT_ID,
+      client_secret: ML_CLIENT_SECRET,
       refresh_token: tokens.refresh_token
     })
   });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Falha ao renovar token ML: ${res.status} ${txt}`);
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`ML refresh erro ${resp.status}: ${txt}`);
   }
-  const newTokens = await res.json();
-  newTokens.obtained_at = Date.now();
-  saveTokens(newTokens);
-  console.log('[mlTokenManager] Token ML renovado com sucesso.');
-  return newTokens.access_token;
+  const data = await resp.json();
+  salvarTokens(data);
+  console.log('[mlToken] Token renovado ✓');
+  return data.access_token;
 }
 
-async function getAccessToken() {
-  const tokens = loadTokens();
-  if (!tokens || !tokens.access_token) {
-    throw new Error('Tokens ML não encontrados. Execute /setup-ml.');
-  }
-  const res = await fetch('https://api.mercadolibre.com/users/me', {
-    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+async function garantirTokenML() {
+  const tokens = lerTokens();
+  if (!tokens?.access_token) throw new Error('ML: token não configurado. Acesse /setup-ml para autorizar.');
+  const resp = await fetch('https://api.mercadolibre.com/users/me', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` }
   });
-  if (res.ok) return tokens.access_token;
-  console.log('[mlTokenManager] Token ML expirado, renovando...');
-  return await refreshAccessToken();
+  if (resp.ok) return tokens.access_token;
+  console.log('[mlToken] Token expirado, renovando...');
+  return await renovarTokenML();
 }
 
-async function exchangeCodeForToken(authCode) {
-  const res = await fetch('https://api.mercadolibre.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: process.env.ML_CLIENT_ID,
-      client_secret: process.env.ML_CLIENT_SECRET,
-      code: authCode,
-      redirect_uri: process.env.BLING_REDIRECT_URI.replace('/callback', '/callback-ml')
-    })
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Falha ao trocar código ML: ${res.status} ${txt}`);
-  }
-  const tokens = await res.json();
-  tokens.obtained_at = Date.now();
-  saveTokens(tokens);
-  console.log('[mlTokenManager] Tokens ML obtidos e salvos.');
-  return tokens;
+function gerarUrlAutorizacao() {
+  return `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${ML_CLIENT_ID}&redirect_uri=${encodeURIComponent(ML_REDIRECT_URI)}`;
 }
 
-module.exports = { getAccessToken, exchangeCodeForToken, loadTokens };
+module.exports = { garantirTokenML, renovarTokenML, trocarCodigoPorToken, gerarUrlAutorizacao };
