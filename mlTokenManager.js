@@ -6,7 +6,7 @@ const fs    = require('fs');
 const ML_TOKEN_FILE    = process.env.ML_TOKEN_FILE    || '/data/ml_tokens.json';
 const ML_CLIENT_ID     = process.env.ML_CLIENT_ID;
 const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET;
-const ML_REDIRECT_URI  = 'https://good-mover-aguardando-x-atendido.onrender.com/callback-ml';
+const ML_REDIRECT_URI  = 'https://ambtotal-mover-aguardando-x-atendido.onrender.com/callback-ml';
 
 function lerTokens() {
   try {
