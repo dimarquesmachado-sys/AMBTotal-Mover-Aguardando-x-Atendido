@@ -174,6 +174,7 @@ async function executarF2() {
     if (!detalhe) { erros++; continue; }
 
     if (Number(detalhe?.situacao?.id) !== SITUACAO_AGUARDANDO) {
+      console.log(`[F2] Pedido ${blingId} situação=${detalhe?.situacao?.id} — não é AGUARDANDO, ignorando.`);
       ignorados++; continue;
     }
 
