@@ -3,7 +3,8 @@ const url = require('url');
 const cron = require('node-cron');
 const { executarF1, executarF2, limparMemoria } = require('./fluxos');
 const tokenManager = require('./tokenManager');
-const { trocarCodigoPorToken, gerarUrlAutorizacao } = require('./mlTokenManager');
+const blingApi = require('./blingApi');
+const { trocarCodigoPorToken, gerarUrlAutorizacao, garantirTokenML } = require('./mlTokenManager');
 
 const PORT = process.env.PORT || 3000;
 
@@ -55,12 +56,28 @@ const server = http.createServer(async (req, res) => {
 
   const json = (statusCode, obj) => {
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(obj));
+    res.end(JSON.stringify(obj, null, 2));
   };
 
   try {
     if (method === 'GET' && pathname === '/health') {
-      return json(200, { status: 'ok', timestamp: new Date().toISOString(), f1Rodando, f2Rodando, timezone: process.env.TZ || 'não definido' });
+      return json(200, {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        f1Rodando,
+        f2Rodando,
+        timezone: process.env.TZ || 'não definido',
+        situacaoAguardando: process.env.SITUACAO_AGUARDANDO || '745122',
+        lojasML: process.env.ME_LOJA_IDS || '(não definido)'
+      });
+    }
+
+    if (method === 'GET' && pathname === '/debug/token') {
+      try {
+        const bling = await tokenManager.getAccessToken().then(() => 'ok').catch(e => `erro: ${e.message}`);
+        const ml = await garantirTokenML().then(() => 'ok').catch(e => `erro: ${e.message}`);
+        return json(200, { bling, ml });
+      } catch (e) { return json(500, { erro: e.message }); }
     }
 
     if (method === 'GET' && pathname === '/callback') {
@@ -82,7 +99,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'POST' && pathname === '/setup') {
       const clientId = process.env.BLING_CLIENT_ID;
       const redirectUri = process.env.BLING_REDIRECT_URI;
-      const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=good`;
+      const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=ambtotal`;
       return json(200, { mensagem: 'Abra a URL abaixo no navegador para autorizar. O código expira em ~60 segundos!', url: authUrl });
     }
 
@@ -127,8 +144,10 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🌻 Girassol - Mover Pedidos iniciado na porta ${PORT}`);
-  console.log(`   Situação AGUARDANDO: ${process.env.SITUACAO_AGUARDANDO || '745122'}`);
+  console.log(`\n🌻 AMBTotal - Mover Pedidos iniciado na porta ${PORT}`);
+  console.log(`   Situação AGUARDANDO: ${process.env.SITUACAO_AGUARDANDO || '745122'} (AGUARDANDO)`);
+  console.log(`   Situação ATENDIDO:   9 (Atendido)`);
+  console.log(`   DESPACHADOS (ignorar): 745123`);
   console.log(`   Lojas ML: ${process.env.ME_LOJA_IDS || '(não definido)'}`);
   console.log(`   Janela: ${process.env.JANELA_ULTIMOS_DIAS || '15'} dias`);
   console.log(`   Timezone: ${process.env.TZ || 'não definido'}`);
