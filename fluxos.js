@@ -91,6 +91,14 @@ async function executarF1() {
 
     if (!detalhe) { erros++; continue; }
 
+    // PROTEÇÃO EXTRA: só move se o detalhe confirmar que ainda está em ATENDIDO
+    const situacaoAtual = Number(detalhe?.situacao?.id);
+    if (situacaoAtual !== SITUACAO_ATENDIDO) {
+      console.log(`[F1] Pedido ${blingId} situação=${situacaoAtual} — não é mais ATENDIDO, ignorando.`);
+      memoriaMovidos.add(blingId);
+      ignorados++; continue;
+    }
+
     if (ehFlex(detalhe)) {
       console.log(`[F1] Pedido ${blingId} é FLEX — ignorando.`);
       memoriaMovidos.add(blingId);
@@ -173,8 +181,11 @@ async function executarF2() {
 
     if (!detalhe) { erros++; continue; }
 
-    if (Number(detalhe?.situacao?.id) !== SITUACAO_AGUARDANDO) {
-      console.log(`[F2] Pedido ${blingId} situação=${detalhe?.situacao?.id} — não é AGUARDANDO, ignorando.`);
+    // PROTEÇÃO CRÍTICA: só move se o detalhe confirmar que ainda está em AGUARDANDO.
+    // Isso impede que pedidos em DESPACHADOS, Cancelado, etc. sejam alterados por engano.
+    const situacaoAtual = Number(detalhe?.situacao?.id);
+    if (situacaoAtual !== SITUACAO_AGUARDANDO) {
+      console.log(`[F2] Pedido ${blingId} situação=${situacaoAtual} — não é AGUARDANDO, ignorando.`);
       ignorados++; continue;
     }
 
