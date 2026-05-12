@@ -79,6 +79,13 @@ async function blingPatch(path, body, retries = 3) {
 
 /**
  * Busca pedidos por situação com paginação.
+ *
+ * IMPORTANTE: A API Bling v3 está ignorando o parâmetro ?situacao= na rota
+ * /pedidos/vendas (bug observado em produção em 11/05/2026 — retorna pedidos
+ * de TODAS as situações, igual ao bug conhecido em /nfe). Por isso, fazemos
+ * um filtro LOCAL adicional usando o campo situacao.id do próprio listing,
+ * garantindo que só pedidos da situação correta sejam retornados.
+ *
  * @param {number} situacaoId - ID da situação no Bling
  * @param {number} janelaDias - quantos dias para trás buscar
  * @param {number} max - limite máximo de pedidos
@@ -90,6 +97,7 @@ async function buscarPedidosPorSituacao(situacaoId, janelaDias, max) {
 
   let pagina = 1;
   let todos = [];
+  let totalBruto = 0;
 
   while (todos.length < max) {
     const url = `/pedidos/vendas?situacao=${situacaoId}&dataInicial=${dataStr}&pagina=${pagina}&limite=100`;
@@ -98,13 +106,29 @@ async function buscarPedidosPorSituacao(situacaoId, janelaDias, max) {
 
     const items = data?.data || [];
     if (items.length === 0) break;
+    totalBruto += items.length;
 
-    todos = todos.concat(items);
+    // FILTRO LOCAL DEFENSIVO: a API às vezes ignora o filtro ?situacao=
+    // Se o item tem situacao.id presente, só aceita os que batem com a situação pedida.
+    // Se o item NÃO tem situacao.id (campo ausente), mantém na lista — o fluxo
+    // depois fará o buscarDetalhePedido e verifica de novo.
+    const filtrados = items.filter(p => {
+      const sid = p?.situacao?.id;
+      if (sid === undefined || sid === null) return true; // sem dado, deixa passar
+      return Number(sid) === Number(situacaoId);
+    });
+
+    todos = todos.concat(filtrados);
     if (items.length < 100) break;
     pagina++;
   }
 
-  return todos.slice(0, max);
+  const resultado = todos.slice(0, max);
+  if (totalBruto !== resultado.length) {
+    console.log(`[blingApi] Filtro local: API retornou ${totalBruto} pedidos, ${resultado.length} realmente em situação ${situacaoId}.`);
+  }
+
+  return resultado;
 }
 
 /**
